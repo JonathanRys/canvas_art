@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en_US">
+    <head>
+        <title>The Golden Rectangle</title>
+        <style>
+        html,
+        body{
+            margin: 2px;
+            padding: 0;
+        }
+        </style>
+    </head>
+    <body>
+        <main id="main">
+        </main>
+        <script>
+            // define phi
+            const PHI = (1 + Math.sqrt(5)) / 2;
+            // define arc radians for drawing quarter circles
+            const arcRadians = [(1/2 * Math.PI), Math.PI, (3/2 * Math.PI), 0];
+            // define colors in gradient
+            const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]; 
+            // define number of rotations to draw
+            const REVOLUTIONS = 12;
+            // define size of margins
+            const MARGIN = 10;
+
+            var grd, tmp;
+
+            var x = [],
+                y = [];
+
+            x[0] = 0;
+            x[2] = window.innerWidth - MARGIN;
+
+            y[0] = window.innerHeight - MARGIN;
+            y[1] = 0;
+
+            // resize canvas based on golden ratio
+            if (x[2] / y[0] > PHI) {
+                x[2] = y[0] * PHI;
+            } else if (x[2] / y[0] < PHI) {
+                y[0] = x[2] / PHI;
+            }
+
+            x[1] = x[2] / PHI,
+            y[2] = y[0] / PHI;
+
+            // add canvas to body in block scope to release canvasTag after adding it to the DOM
+            {
+                let canvasTag = '<canvas id="canvas" width="' + x[2] + '" height="' + y[0] + '"></canvas>';
+                document.getElementById('main').innerHTML = canvasTag;
+            }
+
+            var ctx = document.getElementById('canvas').getContext('2d');
+
+            for (var i = 0; i < REVOLUTIONS; i++) {
+                if (i % 2 === 0) {
+                    if (i % 4 === 0) {
+                        // case 0
+                        x[i + 3] = x[i + 2] - ((x[i + 2] - x[i + 1]) / PHI);
+                    } else {
+                        // case 2
+                        x[i + 3] = x[i + 2] + ((x[i + 1] - x[i + 2]) / PHI);
+                    }
+                    y[i + 3] = y[i];
+                } else {
+                    x[i + 3] = x[i];
+                    if (i % 4 === 1) {
+                        // case 1
+                        y[i + 3] = y[i + 2] - ((y[i + 2] - y[i + 1]) / PHI);
+                    } else {
+                        // case 3
+                        y[i + 3] = y[i + 2] + ((y[i + 1] - y[i + 2]) / PHI);
+                    }
+                }
+            }
+
+console.log(x, y);
+
+
+
+
+            for (var i = 0; i < REVOLUTIONS; i++) {
+                if (i % 2 === 0) {
+                    if (i % 4 === 0) {
+                        // case 0
+                        let x_max = x[i + 1],
+                            x_min = x[i],
+                            y_max = y[i],
+                            y_min = y[i + 1],
+                            range = (x_max - x_min)
+                            smallArcCenter = {
+                                x: x[i + 3],
+                                y: y[i + 4]
+                            },
+                            smallArcRadius = smallArcCenter.x - x[i + 4];
+
+                        for (let j = 0; j < range; j++) {
+                            ctx.beginPath();
+                                let tmp = (y_min + j) >= smallArcCenter.y? smallArcCenter.y: y_min + j;
+
+                                // configure the gradient
+                                grd = ctx.createLinearGradient(x_min + j, y_max, x_max, tmp);
+                                grd.addColorStop(0, colors[i % colors.length]);
+                                grd.addColorStop(1, colors[(i + 1) % colors.length]);
+
+                                // draw the arc and gradient
+                                ctx.moveTo(x_min + j, y_max); // move to the bottom left of the sector
+                                ctx.lineTo(smallArcCenter.x, y_max); // draw a horizontal line to the bottom of the smaller arc
+                                ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, (1/2 * Math.PI), Math.PI); // draw the smaller arc
+                                ctx.lineTo(x_max, tmp); // draw a vertical line to the top of the sector
+                                ctx.arc(x_max, y_max, range - j, (3/2 * Math.PI), Math.PI, true); // draw the large arc
+
+                                // render and fill
+                                ctx.strokeStyle = grd;
+                                ctx.stroke();
+                                ctx.fillStyle = grd;
+                                ctx.fill();
+
+                            ctx.closePath();
+                        }
+                    } else {
+                        // case 2
+                        let x_max = x[i],
+                            x_min = x[i + 1],
+                            y_max = y[i + 1],
+                            y_min = y[i],
+                            range = (x_max - x_min)
+                            smallArcCenter = {
+                                x: x[i + 3],
+                                y: y[i + 4]
+                            },
+                            smallArcRadius = x[i + 4] - smallArcCenter.x;
+
+                        for (let j = 0; j < range; j++) {
+                            ctx.beginPath();
+                                let tmp = (y_max - j) <= smallArcCenter.y? smallArcCenter.y: y_max - j;
+
+                                // configure the gradient
+                                grd = ctx.createLinearGradient(x_max - j, y_min, x_min, tmp);
+                                grd.addColorStop(0, colors[i % colors.length]);
+                                grd.addColorStop(1, colors[(i + 1) % colors.length]);
+                                
+                                // draw the arc and gradient
+                                ctx.moveTo(x_max - j, y_min);
+                                ctx.lineTo(smallArcCenter.x, y_min);
+                                ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, (3/2 * Math.PI), 0);
+                                ctx.lineTo(x_min, tmp);
+                                ctx.arc(x_min, y_min, (y_max - y_min) - j, 0, (1/2 * Math.PI));
+                                
+                                // render and fill
+                                ctx.strokeStyle = grd;
+                                ctx.stroke();
+                                ctx.fillStyle = grd;
+                                ctx.fill();
+                            ctx.closePath();
+                        }
+                    }
+                } else {
+                    if (i % 4 === 1) {
+                        // case 1
+                        let x_max = x[i + 1],
+                            x_min = x[i],
+                            y_max = y[i + 1],
+                            y_min = y[i],
+                            range = (y_max - y_min)
+                            smallArcCenter = {
+                                x: x[i + 4],
+                                y: y[i + 3]
+                            },
+                            smallArcRadius = smallArcCenter.y - y[i + 4];
+
+                        for (let j = 0; j < range; j++) {
+                            ctx.beginPath();
+                                let tmp = (x_max - j) <= smallArcCenter.x? smallArcCenter.x: x_max - j;
+
+                                // configure the gradient
+                                grd = ctx.createLinearGradient(x_min, y_min + j, tmp, y_max);
+                                grd.addColorStop(0, colors[i % colors.length]);
+                                grd.addColorStop(1, colors[(i + 1) % colors.length]);
+                                
+                                // draw the arc and gradient
+                                ctx.moveTo(x_min, y_min + j);
+                                ctx.lineTo(x_min, smallArcCenter.y);
+                                ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, Math.PI, (3/2 * Math.PI));
+                                ctx.lineTo(tmp, y_max);
+                                ctx.arc(x_min, y_max, range - j, (3/2 * Math.PI), 0);
+                                
+                                // render and fill
+                                ctx.strokeStyle = grd;
+                                ctx.stroke();
+                                ctx.fillStyle = grd;
+                                ctx.fill();
+                            ctx.closePath();
+                        }
+                    } else {
+                        // case 3
+                        let x_max = x[i],
+                            x_min = x[i + 1],
+                            y_max = y[i],
+                            y_min = y[i + 1],
+                            range = (y_max - y_min),
+                            smallArcCenter = {
+                                x: x[i + 4],
+                                y: y[i + 3]
+                            },
+                            smallArcRadius = y[i + 4] - smallArcCenter.y;
+
+                        for (let j = 0; j < range; j++) {
+                            ctx.beginPath();
+                                let tmp = (x_min + j) >= smallArcCenter.x? smallArcCenter.x: x_min + j;
+
+                                // configure the gradient
+                                grd = ctx.createLinearGradient(x_max, y_max - j, tmp, y_min);
+                                grd.addColorStop(0, colors[i % colors.length]);
+                                grd.addColorStop(1, colors[(i + 1) % colors.length]);
+                                
+                                // draw the arc and gradient
+                                ctx.moveTo(x_max, y_max - j);
+                                ctx.lineTo(x_max, smallArcCenter.y);
+                                ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, 0, (1/2 * Math.PI));
+                                ctx.lineTo(tmp, y_min);
+                                ctx.arc(x_max, y_min, range - j, arcRadians[1], (1/2 * Math.PI), true);
+                            
+                                // render and fill
+                                ctx.strokeStyle = grd;
+                                ctx.stroke();
+                                ctx.fillStyle = grd;
+                                ctx.fill();
+                            ctx.closePath();
+                        }
+                    }
+                }
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+            var x_max = x[1],
+                x_min = x[0],
+                y_max = y[0],
+                y_min = y[1],
+                range = (x_max - x_min)
+                smallArcCenter = {
+                    x: x[3],
+                    y: y[4]
+                },
+                smallArcRadius = smallArcCenter.x - x[4];
+
+            // draw the first arc
+            for (let i = 0; i < range; i++) {
+                ctx.beginPath();
+                    let tmp = (y_min + i) >= smallArcCenter.y? smallArcCenter.y: y_min + i;
+
+                    // configure the gradient
+                    grd = ctx.createLinearGradient(x_min + i, y_max, x_max, tmp);
+                    grd.addColorStop(0, colors[0]);
+                    grd.addColorStop(1, colors[1]);
+
+                    // draw the arc and gradient
+                    ctx.moveTo(x_min + i, y_max); // move to the bottom left of the sector
+                    ctx.lineTo(smallArcCenter.x, y_max); // draw a horizontal line to the bottom of the smaller arc
+                    ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, arcRadians[0], arcRadians[1]); // draw the smaller arc
+                    ctx.lineTo(x_max, tmp); // draw a vertical line to the top of the sector
+                    ctx.arc(x_max, y_max, range - i, arcRadians[2], arcRadians[1], true); // draw the large arc
+
+                    // render and fill
+                    ctx.strokeStyle = grd;
+                    ctx.stroke();
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+
+                ctx.closePath();
+
+            }
+
+            var x_max = x[2],
+                x_min = x[1],
+                y_max = y[2],
+                y_min = y[1],
+                range = (y_max - y_min)
+                smallArcCenter = {
+                    x: x[5],
+                    y: y[4]
+                },
+                smallArcRadius = smallArcCenter.y - y[5];
+
+            for (let i = 0; i < range; i++) {
+                ctx.beginPath();
+                    let tmp = (x_max - i) <= smallArcCenter.x? smallArcCenter.x: x_max - i;
+
+                    // configure the gradient
+                    grd = ctx.createLinearGradient(x_min, i, tmp, y_max);
+                    grd.addColorStop(0, colors[1]);
+                    grd.addColorStop(1, colors[2]);
+                    
+                    // draw the arc and gradient
+                    ctx.moveTo(x_min, i);
+                    ctx.lineTo(x_min, smallArcCenter.y);
+                    ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, arcRadians[1], arcRadians[2]);
+                    ctx.lineTo(tmp, y_max);
+                    ctx.arc(x_min, y_max, range - i, arcRadians[2], arcRadians[3]);
+                    
+                    // render and fill
+                    ctx.strokeStyle = grd;
+                    ctx.stroke();
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+                ctx.closePath();
+            }
+
+
+//
+            var x_max = x[2],
+                x_min = x[3],
+                y_max = y[3],
+                y_min = y[2],
+                range = (x_max - x_min)
+                smallArcCenter = {
+                    x: x[5],
+                    y: y[6]
+                },
+                smallArcRadius = x[6] - smallArcCenter.x;
+
+            for (let i = 0; i < range; i++) {
+                ctx.beginPath();
+                    let tmp = (y_max - i) <= smallArcCenter.y? smallArcCenter.y: y_max - i;
+
+                    // configure the gradient
+                    grd = ctx.createLinearGradient(x_max - i, y_min, x_min, tmp);
+                    grd.addColorStop(0, colors[2]);
+                    grd.addColorStop(1, colors[3]);
+                    
+                    // draw the arc and gradient
+                    ctx.moveTo(x_max - i, y_min);
+                    ctx.lineTo(smallArcCenter.x, y_min);
+                    ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, arcRadians[2], arcRadians[3]);
+                    ctx.lineTo(x_min, tmp);
+                    ctx.arc(x_min, y_min, range - i, arcRadians[3], arcRadians[0]);
+                    
+                    // render and fill
+                    ctx.strokeStyle = grd;
+                    ctx.stroke();
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+                ctx.closePath();
+            }
+
+            
+            var x_max = x[3],
+                x_min = x[4],
+                y_max = y[3],
+                y_min = y[4],
+                range = (y_max - y_min),
+                smallArcCenter = {
+                    x: x[7],
+                    y: y[6]
+                },
+                smallArcRadius = y[7] - smallArcCenter.y;
+
+            for (let i = 0; i < range; i++) {
+                ctx.beginPath();
+                    let tmp = (x_min + i) >= smallArcCenter.x? smallArcCenter.x: x_min + i;
+
+                    // configure the gradient
+                    grd = ctx.createLinearGradient(x_max, y_max - i, tmp, y_min);
+                    grd.addColorStop(0, colors[3]);
+                    grd.addColorStop(1, colors[4]);
+                    
+                    // draw the arc and gradient
+                    ctx.moveTo(x_max, y_max - i);
+                    ctx.lineTo(x_max, smallArcCenter.y);
+                    ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, arcRadians[3], arcRadians[0]);
+                    ctx.lineTo(tmp, y_min);
+                    ctx.arc(x_max, y_min, range - i, arcRadians[1], arcRadians[0], true);
+                
+                    // render and fill
+                    ctx.strokeStyle = grd;
+                    ctx.stroke();
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+                ctx.closePath();
+            }
+
+
+
+            var x_max = x[5],
+                x_min = x[4],
+                y_max = y[4],
+                y_min = y[5],
+                range = (x_max - x_min)
+                smallArcCenter = {
+                    x: x[7],
+                    y: y[8]
+                },
+                smallArcRadius = (smallArcCenter.x - x[8]);
+
+            for (let i = 0; i < range; i++) {
+                ctx.beginPath();
+                    let tmp = (y_min + i) >= smallArcCenter.y? smallArcCenter.y: y_min + i;
+
+                    // configure the gradient
+                    grd = ctx.createLinearGradient(x_min + i, y_max, x_max, tmp);
+                    grd.addColorStop(0, colors[4]);
+                    grd.addColorStop(1, colors[5]);
+
+                    // draw the arc and gradient
+                    ctx.moveTo(x_min + i, y_max); // move to the bottom left of the sector
+                    ctx.lineTo(smallArcCenter.x, y_max); // draw a horizontal line to the bottom of the smaller arc
+                    ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, arcRadians[0], arcRadians[1]); // draw the smaller arc
+                    ctx.lineTo(x_max, tmp); // draw a vertical line to the top of the sector
+                    ctx.arc(x_max, y_max, range - i, arcRadians[2], arcRadians[1], true); // draw the large arc
+
+                    // render and fill
+                    ctx.strokeStyle = grd;
+                    ctx.stroke();
+                    ctx.fillStyle = grd;
+                    ctx.fill();
+
+                ctx.closePath();
+
+            }
+/*
+            for (let i = 0; i < (x[2] - x[3]); i++) {
+                ctx.beginPath();
+                    let tmp = (x[2] - i) <= x[5]? x[5]: x[2] - i;
+                    grd = ctx.createLinearGradient(x[3], y[1] + i, tmp, y[3]);
+                    grd.addColorStop(0, colors[5]);
+                    grd.addColorStop(1, colors[6]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[3], y[1] + i);
+                        ctx.lineTo(x[3], y[4]);
+                        ctx.arc(x[5], y[4], (x[5] - x[3]), arcRadians[1], arcRadians[2]);
+                        ctx.lineTo(tmp, y[3]);
+                        ctx.arc(x[3], y[3], (x[2] - x[3]) - i, arcRadians[2],  arcRadians[3]);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+
+
+
+            for (let i = 0; i < (x[2] - x[4]); i++) {
+                ctx.beginPath();
+                    let tmp = (y[2] - i) <= y[5]? y[5]: y[2] - i;
+                    grd = ctx.createLinearGradient(x[2] - i, y[3], x[4], tmp);
+                    grd.addColorStop(0, colors[6]);
+                    grd.addColorStop(1, colors[0]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[2] - i, y[3]);
+                        ctx.lineTo(x[4], y[3]);
+                        ctx.arc(x[5], y[5], (x[4] - x[5]), arcRadians[2],  arcRadians[3]);
+                        ctx.lineTo(x[4], tmp);
+                        ctx.arc(x[4], y[3], (x[2] - x[4]) - i,  arcRadians[3], arcRadians[0]);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+            for (let i = 0; i < (y[2] - y[4]); i++) {
+                ctx.beginPath();
+                    let tmp = (x[3] + i) >= x[5]? x[5]: x[3] + i;
+                    grd = ctx.createLinearGradient(x[4],y[2] - i, tmp, y[4]);
+                    grd.addColorStop(0, colors[0]);
+                    grd.addColorStop(1, colors[1]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[4], y[2] - i);
+                        ctx.lineTo(x[4], y[5]);
+                        ctx.arc(x[6], y[5], (x[4] - x[6]),  arcRadians[3], arcRadians[0]);
+                        ctx.lineTo(tmp, y[4]);
+                        ctx.arc(x[4], y[4], (y[2] - y[4]) - i, arcRadians[1], arcRadians[0], true);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+
+
+
+
+            for (let i = 0; i < (x[5] - x[3]); i++) {
+                ctx.beginPath();
+                    let tmp = (y[3] + i) >= y[6]? y[6]: y[3] + i;
+                    grd = ctx.createLinearGradient(x[3] + i, y[4], x[5], tmp);
+                    grd.addColorStop(0, colors[1]);
+                    grd.addColorStop(1, colors[2]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[3] + i, y[4]);
+                        ctx.lineTo(x[6], y[4]);
+                        ctx.arc(x[6], y[6], (x[6] - x[5]), arcRadians[0], arcRadians[1]);
+                        ctx.lineTo(x[5], tmp);
+                        ctx.arc(x[5], y[4], (x[5] - x[3]) - i, arcRadians[2], arcRadians[1], true);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+
+            for (let i = 0; i < (x[4] - x[5]); i++) {
+                ctx.beginPath();
+                    let tmp = (x[4] - i) <= x[7]? x[7]: x[4] - i;
+                    grd = ctx.createLinearGradient(x[5], y[3] + i, tmp, y[5]);
+                    grd.addColorStop(0, colors[2]);
+                    grd.addColorStop(1, colors[3]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[5], y[3] + i);
+                        ctx.lineTo(x[5], y[6]);
+                        ctx.arc(x[7], y[6], (x[7] - x[5]), arcRadians[1], arcRadians[2]);
+                        ctx.lineTo(tmp, y[5]);
+                        ctx.arc(x[5], y[5], (x[4] - x[5]) - i, arcRadians[2], arcRadians[3]);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+
+
+
+
+            for (let i = 0; i < (x[4] - x[6]); i++) {
+                ctx.beginPath();
+                    let tmp = (y[4] - i) <= y[7]? y[7]: y[4] - i;
+                    grd = ctx.createLinearGradient(x[4] - i, y[5], x[6], tmp);
+                    grd.addColorStop(0, colors[3]);
+                    grd.addColorStop(1, colors[4]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[4] - i, y[5]);
+                        ctx.lineTo(x[6], y[5]);
+                        ctx.arc(x[7], y[7], (x[6] - x[7]), arcRadians[2], arcRadians[3]);
+                        ctx.lineTo(x[6], tmp);
+                        ctx.arc(x[6], y[5], (x[4] - x[6]) - i, arcRadians[3], arcRadians[0]);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+            for (let i = 0; i < (y[4] - y[6]); i++) {
+                ctx.beginPath();
+                    let tmp = (x[5] + i) >= x[7]? x[7]: x[5] + i;
+                    grd = ctx.createLinearGradient(x[6], y[4] - i, tmp, y[6]);
+                    grd.addColorStop(0, colors[4]);
+                    grd.addColorStop(1, colors[5]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[6], y[4] - i);
+                        ctx.lineTo(x[6], y[7]);
+                        ctx.arc(x[8], y[7], (x[6] - x[8]), arcRadians[3], arcRadians[0]);
+                        ctx.lineTo(tmp, y[6]);
+                        ctx.arc(x[6], y[6], (y[4] - y[6]) - i, arcRadians[1], arcRadians[0], true);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+
+            for (let i = 0; i < (x[7] - x[5]); i++) {
+                ctx.beginPath();
+                    let tmp = (y[5] + i) >= y[8]? y[8]: y[5] + i;
+                    grd = ctx.createLinearGradient(x[5] + i, y[6], x[7], tmp);
+                    grd.addColorStop(0, colors[5]);
+                    grd.addColorStop(1, colors[6]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[5] + i, y[6]);
+                        ctx.lineTo(x[8], y[6]);
+                        ctx.arc(x[8], y[8], (x[8] - x[7]), arcRadians[0], arcRadians[1]);
+                        ctx.lineTo(x[7], tmp);
+                        ctx.arc(x[7], y[6], (x[7] - x[5]) - i, arcRadians[2], arcRadians[1], true);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+            for (let i = 0; i < (x[6] - x[7]); i++) {
+                ctx.beginPath();
+                    let tmp = (x[6] - i) <= x[9]? x[9]: x[6] - i;
+                    grd = ctx.createLinearGradient(x[7], y[5] + i, tmp, y[7]);
+                    grd.addColorStop(0, colors[6]);
+                    grd.addColorStop(1, colors[0]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[7], y[5] + i);
+                        ctx.lineTo(x[7], y[8]);
+                        ctx.arc(x[9], y[8], (x[9] - x[7]), arcRadians[1], arcRadians[2]);
+                        ctx.lineTo(tmp, y[7]);
+                        ctx.arc(x[7], y[7], (x[6] - x[7]) - i, arcRadians[2], arcRadians[3]);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+
+
+
+            for (let i = 0; i < (x[6] - x[8]); i++) {
+                ctx.beginPath();
+                    let tmp = (y[6] - i) <= y[9]? y[9]: y[6] - i;
+                    grd = ctx.createLinearGradient(x[6] - i, y[7], x[8], tmp);
+                    grd.addColorStop(0, colors[0]);
+                    grd.addColorStop(1, colors[1]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[6] - i, y[7]);
+                        ctx.lineTo(x[8], y[7]);
+                        ctx.arc(x[9], y[9], (x[8] - x[9]), arcRadians[2], arcRadians[3]);
+                        ctx.lineTo(x[8], tmp);
+                        ctx.arc(x[8], y[7], (x[6] - x[8]) - i, arcRadians[3], arcRadians[0]);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }
+
+            for (let i = 0; i < (y[6] - y[8]); i++) {
+                ctx.beginPath();
+                    let tmp = (x[7] + i) >= x[9]? x[9]: x[7] + i;
+                    grd = ctx.createLinearGradient(x[8], y[6] - i, tmp, y[8]);
+                    grd.addColorStop(0, colors[1]);
+                    grd.addColorStop(1, colors[2]);
+                    ctx.strokeStyle = grd;
+
+                        ctx.moveTo(x[8], y[6] - i);
+                        ctx.lineTo(x[8], y[9]);
+                        ctx.arc(x[10], y[9], (x[8] - x[10]), arcRadians[3], arcRadians[0]);
+                        ctx.lineTo(tmp, y[8]);
+                        ctx.arc(x[8], y[8], (y[6] - y[8]) - i, arcRadians[1], arcRadians[0], true);
+                    ctx.stroke();
+
+                        ctx.fillStyle = grd;
+                        ctx.fill();
+                ctx.closePath();
+            }//*/
+        </script>
+    </body>
+</html>
