@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en_US">
+<head>
+    <meta charset="utf-8" />
+    <style>
+        html,
+        body {
+            margin: 2px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #spin-button {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        #canvas.spin {
+            -o-transform-origin: 50% 50%;
+            -ms-transform-origin: 50% 50%;
+            -moz-transform-origin: 50% 50%;
+            -webkit-transform-origin: 50% 50%;
+            transform-origin: 50% 50%;
+            -o-animation: spin 5s infinite linear;
+            -ms-animation: spin 5s infinite linear;
+            -moz-animation: spin 5s infinite linear;
+            -webkit-animation: spin 2s infinite linear;
+            animation: spin 5s infinite linear;
+        }
+
+        #canvas.paused {
+            -webkit-animation-play-state: paused;
+            -moz-animation-play-state: paused;
+            -o-animation-play-state: paused;
+            animation-play-state: paused;
+        }
+
+        @-webkit-keyframes spin {
+            0% {
+                -webkit-transform: rotate(0deg);
+            }
+            100% {
+                -webkit-transform: rotate(360deg);
+            }
+        }
+
+        @-moz-keyframes spin {
+            0% {
+                -moz-transform: rotate(0deg);
+            }
+            100% {
+                -moz-transform: rotate(360deg);
+            }
+        }
+
+        @-o-keyframes spin {
+            0% {
+                -o-transform: rotate(0deg);
+            }
+            100% {
+                -o-transform: rotate(360deg);
+            }
+        }
+
+        @-ms-keyframes spin {
+            0% {
+                -ms-transform: rotate(0deg);
+            }
+            100% {
+                -ms-transform: rotate(360deg);
+            }
+        }
+
+        @-keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <script src="./js/rainbowviz.js"></script>
+    <script>
+
+        /********************************** MAIN  PROGRAM **********************************/
+        var availWidth = window.innerWidth - 10,
+            availHeight = window.innerHeight - 10;
+
+        // Add the canvas tag to the body element
+        var canvasTag = '<input id="spin-button" type="button" value="Spin">\n<canvas id="canvas" width="' + availWidth + '" height="' + availHeight + '"></canvas>';
+        document.body.innerHTML = canvasTag;
+
+        // Define parameters for the circle
+        // The color array's length is the basis for division and can be filled by a separate function such as .map from a calculated range or something from a library like https://github.com/anomal/RainbowVis-JS
+        var colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"],
+            x = availWidth / 2,
+            y = availHeight / 2,
+            radius = (availHeight > availWidth) ? x : y;
+
+        var rb = new Rainbow();
+        rb.setSpectrum("red", "orange", "yellow", "green", "blue", "indigo", "violet", "red");
+        rb.setNumberRange(0, radius);
+        for (let i = 0; i < radius; i++) {
+                colors[i] = '#' + rb.colorAt(i);
+        }
+
+        // Use ~50 as a constant for the iteration cap
+        iterations = (colors.length > 50)? 3: radius;
+        
+        // Draw gradient circle, start with 1 so the top doesn't get cut off
+        for (let i = 1; i < iterations; i++) {
+            circleGradient(x, y, radius - i, colors);
+        }
+
+        /****************************** FUNCTION DECLARATIONS ******************************/
+        function circleGradient(circleCenterX, circleCenterY, circleRadius, colors) {
+            var ctx = document.getElementById('canvas').getContext('2d'),
+                start = [],
+                lineGrd = [],
+                fillGrd = [],
+                lineEnd = [],
+                increment = (2 * Math.PI) / colors.length,
+                lineCenter = [];
+
+            // Calculate the radians
+            for (let i = 0; i <= colors.length; i++) {
+                start[i] = i * increment;
+                lineEnd[i] = {};
+                lineEnd[i].x = (Math.cos(start[i]) * circleRadius) + circleCenterX;
+                lineEnd[i].y = (Math.sin(start[i]) * circleRadius) + circleCenterY;
+                lineCenter[i] = getLineCenter(circleCenterX, circleCenterY, lineEnd[i].x, lineEnd[i].y);
+            }
+
+            // Center the "cursor"
+            ctx.beginPath();
+            ctx.moveTo(circleCenterX, circleCenterY);
+            ctx.closePath();
+
+            // Draw circle sub-sections
+            for (let i = 0; i < colors.length; i++) {
+                // Set fill gradient
+                fillGrd[i] = ctx.createLinearGradient(lineCenter[i].x, lineCenter[i].y, lineCenter[i + 1].x, lineCenter[i + 1].y);
+                fillGrd[i].addColorStop(0, colors[i]);
+                fillGrd[i].addColorStop(1, colors[i + 1] || colors[0]);
+                ctx.fillStyle = fillGrd[i];
+                // Set line gradient
+                lineGrd[i] = ctx.createLinearGradient(lineEnd[i].x, lineEnd[i].y, lineEnd[i + 1].x, lineEnd[i + 1].y);
+                lineGrd[i].addColorStop(0, colors[i]);
+                lineGrd[i].addColorStop(1, colors[i + 1] || colors[0]);
+                ctx.strokeStyle = lineGrd[i];// Comment out for cool effect when i is incremented by 10 or so in the draw gradient loop
+                // Draw the pie slice
+                ctx.beginPath();
+                ctx.lineTo((Math.cos(start[i]) * circleRadius) + circleCenterX, (Math.sin(start[i]) * circleRadius) + circleCenterY);
+                ctx.arc(circleCenterX, circleCenterY, circleRadius, start[i], start[i + 1]);
+                ctx.lineTo(circleCenterX, circleCenterY);
+                ctx.stroke();
+                // Fill the pie slice
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            function getLineCenter(startX, startY, endX, endY) {
+                function getCenter(start, end) {
+                    var centerPoint;
+                    // Find the median
+                    if (start > end) {
+                        centerPoint = start - ((start - end) / 2);
+                    } else if (start < end) {
+                        centerPoint = end - ((end - start) / 2);
+                    } else {
+                        centerPoint = start;
+                    }
+                    return centerPoint;
+                }
+                // Create a center-point object
+                var centerPoint = {};
+                centerPoint.x = getCenter(startX, endX);
+                centerPoint.y = getCenter(startY, endY);
+                return centerPoint;
+            }
+        }
+        window.onload = function() {
+            var spinButton = document.getElementById('spin-button');
+            spinButton.addEventListener('click', function(e) {
+                var colorWheel = document.getElementById('canvas');
+                if (colorWheel.className.match(/ *spin */)) {
+                    if (colorWheel.className.match(/ *paused */)) {
+                        //colorWheel.className = colorWheel.className.replace(/ *spin */, ' ').trim();
+                        colorWheel.className = colorWheel.className.replace(/ *paused */, ' ').trim();
+                        e.target.value = 'Stop';
+                    } else {
+                        colorWheel.className += ' paused';
+                        e.target.value = 'Spin';
+                    }
+                } else {
+                    colorWheel.className += ' spin';
+                    e.target.value = 'Stop';
+                }
+            });
+        }
+        </script>
+    </body>
+</html>
