@@ -23,7 +23,7 @@
             // define size of margins
             const MARGIN = 10;
 
-            var x = [],
+            let x = [],
                 y = [];
 
             x[0] = 0;
@@ -48,10 +48,10 @@
                 document.getElementById('main').innerHTML = canvasTag;
             }
 
-            var ctx = document.getElementById('canvas').getContext('2d');
+            let ctx = document.getElementById('canvas').getContext('2d');
 
             // build a set of data points
-            for (var i = 0; i < REVOLUTIONS; i++) {
+            for (let i = 0; i < REVOLUTIONS; i++) {
                 if (i % 2 === 0) {
                     if (i % 4 === 0) {
                         // case 0
@@ -74,7 +74,7 @@
             }
 
             // Iterate through the rotations
-            for (var i = 0; i < REVOLUTIONS; i++) {
+            for (let i = 0; i < REVOLUTIONS; i++) {
                 if (i % 2 === 0) {
                     if (i % 4 === 0) {
                         // case 0
