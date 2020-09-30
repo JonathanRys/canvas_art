@@ -20,7 +20,7 @@
             // define the colors in gradient
             const colors = ["red", "orange", "yellow", "green", "blue", "indigo", "violet"]; 
             // define the number of rotations to draw
-            const REVOLUTIONS = 12;
+            const REVOLUTIONS = 14;
             // define the size of the margins
             const MARGIN = 10;
 
@@ -147,7 +147,7 @@
                             ctx.lineTo(smallArcCenter.x, y_min);
                             ctx.arc(smallArcCenter.x, smallArcCenter.y, smallArcRadius, (3/2 * Math.PI), 0);
                             ctx.lineTo(x_min, tmp);
-                            ctx.arc(x_min, y_min, (y_max - y_min) - j, 0, (1/2 * Math.PI));
+                            ctx.arc(x_min, y_min, range - j, 0, (1/2 * Math.PI));
 
                             // render and fill
                             ctx.strokeStyle = grd;
